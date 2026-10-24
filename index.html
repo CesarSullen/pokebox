@@ -1,57 +1,307 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050a18" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://pokeapi.co; img-src 'self' https://raw.githubusercontent.com data:; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
 
-		<meta property="og:title" content="Pokédex" />
-		<meta property="og:type" content="website" />
-		<meta property="og:image" content="./assets/logo.JPG" />
+    <meta property="og:title" content="Pokébox" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./assets/logo.png" />
 
-		<link rel="icon" type="image/jpg" href="./assets/logo.JPG" />
-		<link rel="apple-touch-icon" sizes="180x180" href="./assets/logo.JPG" />
+    <link rel="icon" type="image/jpg" href="./assets/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/logo.png" />
+    <link rel="manifest" href="./manifest.json" />
 
-		<link rel="stylesheet" href="./style/style.css" />
-		<title>Pokédex</title>
-	</head>
-	<body>
-		<div class="body-container">
-			<div class="search-container">
-				<input type="search" id="searchInput" placeholder="Find a Pokémon..." />
-				<button id="clearBtn"><img src="./assets/icons/clear.svg" /></button>
-				<button id="searchBtn">
-					<img src="./assets/icons/magnifier.svg" />
-				</button>
-			</div>
-			<div id="categories"></div>
-			<ul id="pokemonList"></ul>
-			<div class="pagination-btn-container">
-				<div id="prevBtn" class="btn">Previous</div>
-				<div id="nextBtn" class="btn">Next</div>
-			</div>
-		</div>
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>Pokébox</title>
+  </head>
+  <body>
+    <div class="app">
+      <a href="./" class="logo" aria-label="Pokébox, inicio">
+        <span class="icon logo-icon" aria-hidden="true"></span>
+        <span class="logo-text">Pokébox</span>
+      </a>
 
-		<footer>
-			<div class="footer-content">
-				<img
-					src="./assets/banner.PNG"
-					alt="Footer Image"
-					class="footer-image"
-				/>
-				<nav class="footer-links">
-					<a href="./views/donate.html">Support the Project</a>
-					<a href="https://cesarsullen.github.io">About the Developer</a>
-					<a href="https://pokeapi.co" target="_blank">PokeAPI</a>
-					<a
-						href="https://github.com/duiker101/pokemon-type-svg-icons"
-						target="_blank"
-						>Pokemon Type Icons</a
-					>
-				</nav>
-			</div>
-		</footer>
+      <div class="search-container">
+        <span class="icon icon-search search-icon" aria-hidden="true"></span>
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="Buscar Pokémon..."
+          autocomplete="off"
+          aria-label="Buscar Pokémon"
+        />
+        <button
+          type="button"
+          id="clearBtn"
+          class="clear-btn"
+          aria-label="Borrar búsqueda"
+          hidden
+        >
+          <span class="icon icon-close" aria-hidden="true"></span>
+        </button>
+        <button
+          type="button"
+          id="searchBtn"
+          class="search-btn"
+          aria-label="Buscar"
+        >
+          <span class="icon icon-search" aria-hidden="true"></span>
+        </button>
+      </div>
 
-		<script src="./js/main.js"></script>
-		<script src="./js/searchModule.js"></script>
-	</body>
+      <nav class="nav" aria-label="Principal">
+        <button
+          type="button"
+          class="nav-btn active"
+          data-view="all"
+          aria-current
+        >
+          <span class="icon icon-pokeball" aria-hidden="true"></span>
+          <span>Pokémon</span>
+        </button>
+        <button type="button" class="nav-btn" data-view="generations">
+          <span class="icon icon-layers" aria-hidden="true"></span>
+          <span>Generaciones</span>
+        </button>
+        <button type="button" class="nav-btn" data-view="regions">
+          <span class="icon icon-map" aria-hidden="true"></span>
+          <span>Regiones</span>
+        </button>
+        <button type="button" class="nav-btn" data-view="favorites">
+          <span class="icon icon-star" aria-hidden="true"></span>
+          <span>Favoritos</span>
+        </button>
+      </nav>
+
+      <main class="main" id="mainContent">
+        <div id="generationFilter" class="group-filter" hidden>
+          <div id="generationList" class="group-list"></div>
+        </div>
+
+        <div id="regionFilter" class="group-filter" hidden>
+          <div id="regionList" class="group-list"></div>
+        </div>
+
+        <div class="type-filter">
+          <div class="type-list" id="typeList"></div>
+          <button
+            type="button"
+            id="typeToggle"
+            class="type-toggle"
+            aria-label="Mostrar todos los tipos"
+            aria-expanded="false"
+          >
+            <span class="icon icon-chevron-down" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <ul id="pokemonList" class="pokemon-list"></ul>
+        <p id="emptyMessage" class="empty-message" hidden></p>
+
+        <div id="pagination" class="pagination" hidden>
+          <button type="button" id="prevBtn" class="page-btn">Anterior</button>
+          <span id="pageInfo" class="page-info"></span>
+          <button type="button" id="nextBtn" class="page-btn">Siguiente</button>
+        </div>
+
+        <footer class="credits">
+          <a
+            href="https://cesarsullen.github.io/views/donations"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Apoyar el proyecto</a
+          >
+          <a
+            href="https://cesarsullen.github.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Sobre el desarrollador</a
+          >
+          <a href="https://pokeapi.co" target="_blank" rel="noopener noreferrer"
+            >PokeAPI</a
+          >
+          <a
+            href="https://github.com/duiker101/pokemon-type-svg-icons"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Iconos de tipos</a
+          >
+          <a href="https://lucide.dev" target="_blank" rel="noopener noreferrer"
+            >Lucide</a
+          >
+        </footer>
+      </main>
+
+      <div id="detailBackdrop" class="detail-backdrop"></div>
+      <aside id="detail" class="detail" aria-label="Detalle del Pokémon">
+        <div class="detail-bar">
+          <span class="detail-handle" aria-hidden="true"></span>
+          <button
+            type="button"
+            id="detailClose"
+            class="detail-close"
+            aria-label="Cerrar detalle"
+          >
+            <span class="icon icon-close" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <p id="detailPlaceholder" class="detail-placeholder">
+          Selecciona un Pokémon para ver su información.
+        </p>
+
+        <div id="detailBody" class="detail-body" hidden>
+          <section id="detailHero" class="detail-hero section">
+            <div class="hero-actions">
+              <button
+                type="button"
+                id="shinyBtn"
+                class="icon-action shiny-btn"
+                aria-pressed="false"
+                aria-label="Ver versión shiny"
+              >
+                <span class="icon icon-sparkles" aria-hidden="true"></span>
+              </button>
+              <button
+                type="button"
+                id="favoriteBtn"
+                class="icon-action favorite-btn"
+                aria-pressed="false"
+                aria-label="Añadir a favoritos"
+              >
+                <span class="icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="detail-title">
+              <span id="detailId" class="detail-id"></span>
+              <h2 id="detailName" class="detail-name"></h2>
+              <p id="detailGenus" class="detail-genus"></p>
+            </div>
+            <div id="detailTypes" class="pokemon-types"></div>
+            <img
+              id="detailImg"
+              class="detail-img"
+              alt=""
+              width="512"
+              height="512"
+              crossorigin="anonymous"
+            />
+            <p id="detailDescription" class="detail-description"></p>
+            <div class="measures">
+              <div class="measure">
+                <span class="icon icon-height" aria-hidden="true"></span>
+                <div>
+                  <span class="measure-label">Altura</span>
+                  <span id="detailHeight" class="measure-value"></span>
+                </div>
+              </div>
+              <div class="measure">
+                <span class="icon icon-weight" aria-hidden="true"></span>
+                <div>
+                  <span class="measure-label">Peso</span>
+                  <span id="detailWeight" class="measure-value"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3 class="section-title">Estadísticas base</h3>
+            <div id="detailStats" class="stats"></div>
+          </section>
+
+          <div class="section-row">
+            <section class="section">
+              <h3 class="section-title">Debilidades y resistencias</h3>
+              <span class="matchup-label">Débil a</span>
+              <div id="detailWeaknesses" class="matchup-list"></div>
+              <span class="matchup-label">Resiste</span>
+              <div id="detailResistances" class="matchup-list"></div>
+            </section>
+
+            <section class="section">
+              <h3 class="section-title">Habilidades</h3>
+              <div id="detailAbilities" class="chip-list"></div>
+              <p id="abilityInfo" class="ability-info" hidden></p>
+            </section>
+          </div>
+
+          <section class="section">
+            <h3 class="section-title">Ficha de especie</h3>
+            <div id="detailBadges" class="chip-list badges" hidden></div>
+            <dl class="facts">
+              <div class="fact">
+                <dt>Género</dt>
+                <dd id="detailGender"></dd>
+              </div>
+              <div class="fact">
+                <dt>Grupos huevo</dt>
+                <dd id="detailEggGroups" class="chip-list"></dd>
+              </div>
+              <div class="fact">
+                <dt>Ratio de captura</dt>
+                <dd id="detailCapture"></dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="section">
+            <h3 class="section-title">Evolución</h3>
+            <div id="detailEvolution" class="evolution"></div>
+          </section>
+
+          <section class="section">
+            <h3 class="section-title">Generación y regiones</h3>
+            <div id="detailGeneration" class="chip-list origin-list"></div>
+            <span class="matchup-label">Aparece en</span>
+            <div id="detailRegions" class="chip-list"></div>
+          </section>
+
+          <div class="accordion-item">
+            <button
+              type="button"
+              class="accordion-header"
+              aria-expanded="false"
+            >
+              <span>Movimientos (<span id="detailMovesCount">0</span>)</span>
+              <span class="icon icon-chevron-down" aria-hidden="true"></span>
+            </button>
+            <div class="accordion-content">
+              <div id="detailMoves" class="chip-list"></div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button
+              type="button"
+              class="accordion-header"
+              data-accordion="locations"
+              aria-expanded="false"
+            >
+              <span>Ubicaciones</span>
+              <span class="icon icon-chevron-down" aria-hidden="true"></span>
+            </button>
+            <div class="accordion-content">
+              <div id="detailLocations" class="chip-list"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script src="./js/constants.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/favorites.js"></script>
+    <script src="./js/reveal.js"></script>
+    <script src="./js/regions.js"></script>
+    <script src="./js/evolution.js"></script>
+    <script src="./js/pokemonDetail.js"></script>
+    <script src="./js/main.js"></script>
+  </body>
 </html>

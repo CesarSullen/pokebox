@@ -1,17 +1,17 @@
-# Pokedex
+# Pokébox
 
-### Welcome to the Pokedex, a web application where you can explore and learn about Pokémon.
+### Welcome to Pokébox, a web application where you can explore and learn about Pokémon.
 
 ## Features
 
-- Pokémon Search: Search for specific Pokémon using the search bar.
-- Navigation: Browse through the entire list of Pokémon from the main page.
-- Categories: View Pokémon of specific types in the categories section on the main page.
-- Statistics: Check the stats of each Pokémon.
+- Pokémon Search: Search for any Pokémon by name or number.
+- Views: Browse every Pokémon, group them by generation, or check your favorites.
+- Types: Filter the list by type in any view.
+- Details: Base stats, abilities, weaknesses and resistances, moves and locations of each Pokémon.
 
-## Version
+## Development
 
-The Pokedex is currently at version 1.2.0. More features will be added in future updates.
+Plain HTML, CSS and JavaScript, there is nothing to build. Open `index.html` with any static server.
 
 ## Credits
 
@@ -19,8 +19,8 @@ This project uses PokeAPI to fetch information about Pokémon. You can visit Pok
 
 The icons for Pokémon types were sourced from this [link](https://github.com/duiker101/pokemon-type-svg-icons).
 
-# Try the Pokedex
+# Try Pokébox
 
-You can try the application at the following link: [cesarsullen.github.io/pokedex](https://cesarsullen.github.io/pokedex).
+You can try the application at the following link: [cesarsullen.github.io/pokebox](https://cesarsullen.github.io/pokebox).
 
 I hope you enjoy exploring the world of Pokémon!
