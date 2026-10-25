@@ -1,5 +1,5 @@
 // Cache version
-const CACHE_NAME = "pokebox-1.0.1";
+const CACHE_NAME = "pokebox-1.0.2";
 const DATA_CACHE = "pokebox-data-1";
 const MAX_IMAGES = 300;
 
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   "./js/api.js",
   "./js/favorites.js",
   "./js/reveal.js",
-  "./js/regions.js",
+  "./js/games.js",
   "./js/evolution.js",
   "./js/pokemonDetail.js",
   "./js/main.js",
@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   "./data/moves.json",
   "./data/locations.json",
   "./data/items.json",
+  "./data/versions.json",
 
   // Assets
   "./assets/icon-192.png",
@@ -39,14 +40,13 @@ const STATIC_ASSETS = [
   "./assets/icons/fighting.svg",
   "./assets/icons/fire.svg",
   "./assets/icons/flying.svg",
+  "./assets/icons/gamepad.svg",
   "./assets/icons/ghost.svg",
   "./assets/icons/grass.svg",
   "./assets/icons/ground.svg",
   "./assets/icons/height.svg",
   "./assets/icons/ice.svg",
   "./assets/icons/layers.svg",
-  "./assets/icons/map-pin.svg",
-  "./assets/icons/map.svg",
   "./assets/icons/normal.svg",
   "./assets/icons/poison.svg",
   "./assets/icons/pokeball.svg",

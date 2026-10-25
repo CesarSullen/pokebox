@@ -4,8 +4,8 @@ const pokemonList = document.getElementById("pokemonList");
 const emptyMessage = document.getElementById("emptyMessage");
 const generationFilter = document.getElementById("generationFilter");
 const generationList = document.getElementById("generationList");
-const regionFilter = document.getElementById("regionFilter");
-const regionList = document.getElementById("regionList");
+const gameFilter = document.getElementById("gameFilter");
+const gameList = document.getElementById("gameList");
 const typeList = document.getElementById("typeList");
 const typeToggle = document.getElementById("typeToggle");
 const searchInput = document.getElementById("searchInput");
@@ -21,7 +21,7 @@ let page = 0;
 let view = "all";
 let activeType = "all";
 let activeGeneration = 1;
-let activeRegion = "kanto";
+let activeGame = "red-blue";
 let searchTerm = "";
 let allPokemon = [];
 let filteredPokemon = [];
@@ -103,29 +103,29 @@ function selectGeneration(id) {
   updateList();
 }
 
-/* ===================== REGIONS ===================== */
-function buildRegionFilter() {
-  REGIONS.forEach((region) => {
+/* ===================== GAMES ===================== */
+function buildGameFilter() {
+  GAMES.forEach((game) => {
     const chip = createElement("button", "group-chip");
     chip.type = "button";
-    chip.dataset.region = region.name;
-    chip.classList.toggle("active", region.name === activeRegion);
-    chip.setAttribute("aria-pressed", region.name === activeRegion);
+    chip.dataset.game = game.name;
+    chip.classList.toggle("active", game.name === activeGame);
+    chip.setAttribute("aria-pressed", game.name === activeGame);
 
-    const badge = createElement("span", "group-badge");
-    badge.appendChild(createElement("span", "icon icon-map-pin"));
-
-    chip.append(badge, createElement("span", "", region.label));
-    chip.addEventListener("click", () => selectRegion(region.name));
-    regionList.append(chip);
+    chip.append(
+      createElement("span", "group-badge", game.roman),
+      createElement("span", "", game.label),
+    );
+    chip.addEventListener("click", () => selectGame(game.name));
+    gameList.append(chip);
   });
 }
 
-function selectRegion(name) {
-  activeRegion = name;
+function selectGame(name) {
+  activeGame = name;
 
-  regionList.querySelectorAll(".group-chip").forEach((chip) => {
-    const isActive = chip.dataset.region === name;
+  gameList.querySelectorAll(".group-chip").forEach((chip) => {
+    const isActive = chip.dataset.game === name;
     chip.classList.toggle("active", isActive);
     chip.setAttribute("aria-pressed", isActive);
   });
@@ -135,7 +135,7 @@ function selectRegion(name) {
 
 function updateGroupFilters() {
   generationFilter.hidden = view !== "generations";
-  regionFilter.hidden = view !== "regions";
+  gameFilter.hidden = view !== "games";
 }
 
 /* ===================== POKÉMON LIST ===================== */
@@ -163,8 +163,8 @@ async function getFilteredList() {
     );
   }
 
-  if (view === "regions") {
-    const ids = await getRegionPokemon(activeRegion);
+  if (view === "games") {
+    const ids = await getGamePokemon(activeGame);
     list = list.filter((pokemon) => ids.has(pokemon.id));
   }
 
@@ -456,7 +456,7 @@ document.addEventListener("keydown", (event) => {
 /* ===================== INIT ===================== */
 async function init() {
   buildGenerationFilter();
-  buildRegionFilter();
+  buildGameFilter();
   buildTypeFilter();
 
   if (getHashId()) {

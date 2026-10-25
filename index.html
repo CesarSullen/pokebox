@@ -85,9 +85,9 @@
           <span class="icon icon-layers" aria-hidden="true"></span>
           <span>Generaciones</span>
         </button>
-        <button type="button" class="nav-btn" data-view="regions">
-          <span class="icon icon-map" aria-hidden="true"></span>
-          <span>Regiones</span>
+        <button type="button" class="nav-btn" data-view="games">
+          <span class="icon icon-gamepad" aria-hidden="true"></span>
+          <span>Juegos</span>
         </button>
         <button type="button" class="nav-btn" data-view="favorites">
           <span class="icon icon-star" aria-hidden="true"></span>
@@ -100,8 +100,8 @@
           <div id="generationList" class="group-list"></div>
         </div>
 
-        <div id="regionFilter" class="group-filter" hidden>
-          <div id="regionList" class="group-list"></div>
+        <div id="gameFilter" class="group-filter" hidden>
+          <div id="gameList" class="group-list"></div>
         </div>
 
         <div class="type-filter">
@@ -273,11 +273,31 @@
           </section>
 
           <section class="section">
-            <h3 class="section-title">Generación y regiones</h3>
+            <h3 class="section-title">Generación y juegos</h3>
             <div id="detailGeneration" class="chip-list origin-list"></div>
             <span class="matchup-label">Aparece en</span>
-            <div id="detailRegions" class="chip-list"></div>
+            <div id="detailGames" class="chip-list"></div>
           </section>
+
+          <div class="accordion-item">
+            <button
+              type="button"
+              class="accordion-header"
+              data-accordion="locations"
+              aria-expanded="false"
+            >
+              <span>Ubicaciones</span>
+              <span class="icon icon-chevron-down" aria-hidden="true"></span>
+            </button>
+            <div class="accordion-content">
+              <div>
+                <span id="versionsLabel" class="matchup-label" hidden>Se captura en</span>
+                <div id="detailVersions" class="chip-list origin-list"></div>
+                <span class="matchup-label">Lugares</span>
+                <div id="detailLocations" class="chip-list"></div>
+              </div>
+            </div>
+          </div>
 
           <div class="accordion-item">
             <button
@@ -292,21 +312,6 @@
               <div id="detailMoves" class="chip-list"></div>
             </div>
           </div>
-
-          <div class="accordion-item">
-            <button
-              type="button"
-              class="accordion-header"
-              data-accordion="locations"
-              aria-expanded="false"
-            >
-              <span>Ubicaciones</span>
-              <span class="icon icon-chevron-down" aria-hidden="true"></span>
-            </button>
-            <div class="accordion-content">
-              <div id="detailLocations" class="chip-list"></div>
-            </div>
-          </div>
         </div>
       </aside>
     </div>
@@ -315,7 +320,7 @@
     <script src="./js/api.js"></script>
     <script src="./js/favorites.js"></script>
     <script src="./js/reveal.js"></script>
-    <script src="./js/regions.js"></script>
+    <script src="./js/games.js"></script>
     <script src="./js/evolution.js"></script>
     <script src="./js/pokemonDetail.js"></script>
     <script src="./js/main.js"></script>

@@ -5,7 +5,7 @@
 ## Features
 
 - Pokémon Search: Search for any Pokémon by name or number.
-- Views: Browse every Pokémon, group them by generation, or check your favorites.
+- Views: Browse every Pokémon, group them by generation or by game, or check your favorites.
 - Types: Filter the list by type in any view.
 - Details: Base stats, abilities, weaknesses and resistances, moves and locations of each Pokémon.
 

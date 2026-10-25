@@ -150,12 +150,8 @@ a {
   --icon: url("../assets/icons/star.svg");
 }
 
-.icon-map {
-  --icon: url("../assets/icons/map.svg");
-}
-
-.icon-map-pin {
-  --icon: url("../assets/icons/map-pin.svg");
+.icon-gamepad {
+  --icon: url("../assets/icons/gamepad.svg");
 }
 
 .icon-layers {
@@ -412,7 +408,7 @@ a {
   height: 1rem;
 }
 
-/* ===================== GENERATION AND REGION FILTER ===================== */
+/* ===================== GENERATION AND GAME FILTER ===================== */
 .group-filter {
   margin-bottom: 0.75rem;
 }
@@ -465,11 +461,6 @@ a {
   color: var(--accent-light);
   font-size: 0.72rem;
   font-weight: 700;
-}
-
-.group-badge .icon {
-  width: 0.95rem;
-  height: 0.95rem;
 }
 
 .group-chip.active .group-badge {

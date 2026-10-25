@@ -28,7 +28,9 @@ const detailCapture = document.getElementById("detailCapture");
 const detailEvolution = document.getElementById("detailEvolution");
 const abilityInfo = document.getElementById("abilityInfo");
 const detailGeneration = document.getElementById("detailGeneration");
-const detailRegions = document.getElementById("detailRegions");
+const detailGames = document.getElementById("detailGames");
+const detailVersions = document.getElementById("detailVersions");
+const versionsLabel = document.getElementById("versionsLabel");
 const favoriteBtn = document.getElementById("favoriteBtn");
 
 const desktopQuery = window.matchMedia("(min-width: 1000px)");
@@ -66,7 +68,7 @@ async function openDetail(id) {
 		loadSpecies(pokemon, request);
 		loadMatchups(pokemon, request);
 		loadAbilities(pokemon, request);
-		loadRegions(pokemon, request);
+		loadGames(pokemon, request);
 		loadMoves(pokemon, request);
 	} catch (error) {
 		console.error(error);
@@ -143,12 +145,14 @@ function renderPokemon(pokemon) {
 	detailGeneration.replaceChildren(
 		createElement("span", "origin-chip accent", `Generación ${generation.roman} · ${generation.region}`)
 	);
-	detailRegions.replaceChildren();
+	detailGames.replaceChildren();
 
 	detailWeaknesses.replaceChildren();
 	detailResistances.replaceChildren();
 	detailAbilities.replaceChildren();
 	detailLocations.replaceChildren();
+	detailVersions.replaceChildren();
+	versionsLabel.hidden = true;
 	locationsLoadedFor = null;
 
 	// Restart the entrance animation
@@ -198,7 +202,8 @@ function loadNames() {
 			fetch("./data/moves.json").then((response) => response.json()),
 			fetch("./data/locations.json").then((response) => response.json()),
 			fetch("./data/items.json").then((response) => response.json()),
-		]).then(([moves, locations, items]) => ({ moves, locations, items }));
+			fetch("./data/versions.json").then((response) => response.json()),
+		]).then(([moves, locations, items, versions]) => ({ moves, locations, items, versions }));
 
 		// A failed request must not stay cached
 		namesRequest.catch(() => (namesRequest = null));
@@ -458,23 +463,24 @@ function showAbility(chip, ability) {
 	}
 }
 
-/* ===================== REGIONS ===================== */
-async function loadRegions(pokemon, request) {
+/* ===================== GAMES ===================== */
+async function loadGames(pokemon, request) {
 	try {
-		const regions = await getPokemonRegions(pokemon.id);
+		const games = await getPokemonGames(pokemon.id);
 		if (request !== detailRequest) {
 			return;
 		}
 
-		detailRegions.replaceChildren(
-			...regions.map((region) => createElement("span", "origin-chip", region.label))
+		detailGames.replaceChildren(
+			...games.map((game) => createElement("span", "origin-chip", game.label))
 		);
 	} catch (error) {
-		console.error("Error fetching regions:", error);
+		console.error("Error fetching games:", error);
 	}
 }
 
 /* ===================== LOCATIONS ===================== */
+// Only requested when the section is opened
 async function loadLocations() {
 	if (locationsLoadedFor === currentPokemonId) {
 		return;
@@ -485,7 +491,10 @@ async function loadLocations() {
 	locationsLoadedFor = id;
 
 	try {
-		const encounters = await fetchData(`pokemon/${id}/encounters`);
+		const [encounters, names] = await Promise.all([
+			fetchData(`pokemon/${id}/encounters`),
+			loadNames(),
+		]);
 		if (request !== detailRequest) {
 			return;
 		}
@@ -497,8 +506,20 @@ async function loadLocations() {
 			return;
 		}
 
+		// Versions where it can be caught, in release order. Some Pokémon are only in one of the two versions of a game
+		const versions = new Set(
+			encounters.flatMap((encounter) =>
+				encounter.version_details.map((detail) => detail.version.name)
+			)
+		);
+		const caught = Object.keys(names.versions).filter((slug) => versions.has(slug));
+
+		detailVersions.replaceChildren(
+			...caught.map((slug) => createElement("span", "chip", names.versions[slug]))
+		);
+		versionsLabel.hidden = caught.length === 0;
+
 		// Several areas belong to the same place, so they are grouped by place
-		const names = await loadNames();
 		const places = new Set(
 			encounters.map(
 				(encounter) =>
@@ -506,9 +527,6 @@ async function loadLocations() {
 					formatName(encounter.location_area.name)
 			)
 		);
-		if (request !== detailRequest) {
-			return;
-		}
 
 		detailLocations.replaceChildren(
 			...sortNames([...places]).map((place) => createElement("span", "chip", place))

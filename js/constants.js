@@ -36,18 +36,31 @@ const GENERATIONS = [
 	{ id: 9, roman: "IX", region: "Paldea", from: 906, to: 1025 },
 ];
 
-// Regions with their own regional Pokédex in the API
-const REGIONS = [
-	{ name: "kanto", label: "Kanto" },
-	{ name: "johto", label: "Johto" },
-	{ name: "hoenn", label: "Hoenn" },
-	{ name: "sinnoh", label: "Sinnoh" },
-	{ name: "unova", label: "Teselia" },
-	{ name: "kalos", label: "Kalos" },
-	{ name: "alola", label: "Alola" },
-	{ name: "galar", label: "Galar" },
-	{ name: "hisui", label: "Hisui" },
-	{ name: "paldea", label: "Paldea" },
+// Games, by version group in the API. Each one lists the Pokémon of its own Pokédexes
+const GAMES = [
+	{ name: "red-blue", roman: "I", label: "Rojo / Azul" },
+	{ name: "yellow", roman: "I", label: "Amarillo" },
+	{ name: "gold-silver", roman: "II", label: "Oro / Plata" },
+	{ name: "crystal", roman: "II", label: "Cristal" },
+	{ name: "ruby-sapphire", roman: "III", label: "Rubí / Zafiro" },
+	{ name: "emerald", roman: "III", label: "Esmeralda" },
+	{ name: "firered-leafgreen", roman: "III", label: "Rojo Fuego / Verde Hoja" },
+	{ name: "diamond-pearl", roman: "IV", label: "Diamante / Perla" },
+	{ name: "platinum", roman: "IV", label: "Platino" },
+	{ name: "heartgold-soulsilver", roman: "IV", label: "HeartGold / SoulSilver" },
+	{ name: "black-white", roman: "V", label: "Negro / Blanco" },
+	{ name: "black-2-white-2", roman: "V", label: "Negro 2 / Blanco 2" },
+	{ name: "x-y", roman: "VI", label: "X / Y" },
+	{ name: "omega-ruby-alpha-sapphire", roman: "VI", label: "Rubí Omega / Zafiro Alfa" },
+	{ name: "sun-moon", roman: "VII", label: "Sol / Luna" },
+	{ name: "ultra-sun-ultra-moon", roman: "VII", label: "Ultrasol / Ultraluna" },
+	{ name: "lets-go-pikachu-lets-go-eevee", roman: "VII", label: "Let's Go, Pikachu / Eevee" },
+	{ name: "sword-shield", roman: "VIII", label: "Espada / Escudo" },
+	{ name: "brilliant-diamond-shining-pearl", roman: "VIII", label: "Diamante Brillante / Perla Reluciente" },
+	{ name: "legends-arceus", roman: "VIII", label: "Leyendas Pokémon: Arceus" },
+	{ name: "scarlet-violet", roman: "IX", label: "Escarlata / Púrpura" },
+	{ name: "legends-za", roman: "IX", label: "Leyendas Pokémon: Z-A" },
+	{ name: "champions", roman: "IX", label: "Champions" },
 ];
 
 const EGG_GROUPS = {
