@@ -91,7 +91,29 @@ const STAT_LABELS = [
 ];
 
 /* ===================== HELPERS ===================== */
+// Names that a plain format would spoil
+const NAME_OVERRIDES = {
+	farfetchd: "Farfetch'd",
+	sirfetchd: "Sirfetch'd",
+	"mr-mime": "Mr. Mime",
+	"mr-rime": "Mr. Rime",
+	"mime-jr": "Mime Jr.",
+	"type-null": "Type: Null",
+	"nidoran-f": "Nidoran♀",
+	"nidoran-m": "Nidoran♂",
+	"ho-oh": "Ho-Oh",
+	"porygon-z": "Porygon-Z",
+	"jangmo-o": "Jangmo-o",
+	"hakamo-o": "Hakamo-o",
+	"kommo-o": "Kommo-o",
+	flabebe: "Flabébé",
+};
+
 function formatName(name) {
+	if (NAME_OVERRIDES[name]) {
+		return NAME_OVERRIDES[name];
+	}
+
 	return name
 		.replace(/-/g, " ")
 		.replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -156,6 +178,61 @@ function createTypeIcon(typeName) {
 	icon.height = 24;
 
 	return icon;
+}
+
+const REGIONAL_FORMS = { alola: "Alola", galar: "Galar", hisui: "Hisui", paldea: "Paldea" };
+const FORM_VARIANTS = { "combat-breed": "Combatiente", "blaze-breed": "Ardiente", "aqua-breed": "Acuática" };
+
+// Fusion forms keep the number of their Pokémon and give it other stats, and sometimes another type
+const FUSION_FORMS = {
+	"necrozma-dusk": { base: "necrozma", label: "Melena Crepuscular" },
+	"necrozma-dawn": { base: "necrozma", label: "Alas del Alba" },
+	"kyurem-black": { base: "kyurem", label: "Negro" },
+	"kyurem-white": { base: "kyurem", label: "Blanco" },
+	"calyrex-ice": { base: "calyrex", label: "Jinete Glacial" },
+	"calyrex-shadow": { base: "calyrex", label: "Jinete Espectral" },
+};
+
+// Regional forms are named like zorua-hisui
+function parseForm(name) {
+	if (FUSION_FORMS[name]) {
+		return { ...FUSION_FORMS[name], regional: false };
+	}
+
+	const match = name.match(/^(.+?)-(alola|galar|hisui|paldea)(?:-(.+))?$/);
+
+	if (!match) {
+		return null;
+	}
+
+	const variant = FORM_VARIANTS[match[3]];
+
+	return {
+		base: match[1],
+		label: `${REGIONAL_FORMS[match[2]]}${variant ? ` (${variant})` : ""}`,
+		regional: true,
+	};
+}
+
+function formatPokemonName(name) {
+	const form = parseForm(name);
+
+	if (!form) {
+		return formatName(name);
+	}
+
+	return `${formatName(form.base)}${form.regional ? " de" : ""} ${form.label}`;
+}
+
+function getFormLabel(name) {
+	const form = parseForm(name);
+
+	return form ? form.label : "Original";
+}
+
+// Forms have their own id in the API, the number shown is the one of their species
+function getSpeciesId(pokemon) {
+	return getIdFromUrl(pokemon.species.url);
 }
 
 function getTypeLabel(typeName) {

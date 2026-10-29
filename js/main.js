@@ -142,10 +142,25 @@ function updateGroupFilters() {
 async function loadAllPokemon() {
   const data = await fetchData(`pokemon?limit=${TOTAL_POKEMONS}`);
 
-  allPokemon = data.results.map((pokemon) => ({
-    id: getIdFromUrl(pokemon.url),
-    name: pokemon.name,
+  // Without the forms the list still works, it only misses the regional ones
+  await loadForms().catch((error) => console.error("Error fetching forms:", error));
+
+  const base = data.results.map((pokemon) => {
+    const id = getIdFromUrl(pokemon.url);
+
+    return { id, name: pokemon.name, species: id, form: false };
+  });
+  const forms = [...formsById.values()].map((form) => ({
+    id: form.id,
+    name: form.name,
+    species: form.species,
+    form: true,
   }));
+
+  // Each regional form goes right after its original
+  allPokemon = [...base, ...forms].sort(
+    (a, b) => a.species - b.species || Number(a.form) - Number(b.form) || a.id - b.id,
+  );
 }
 
 async function getFilteredList() {
@@ -159,13 +174,16 @@ async function getFilteredList() {
   if (view === "generations") {
     const generation = GENERATIONS.find((item) => item.id === activeGeneration);
     list = list.filter(
-      (pokemon) => pokemon.id >= generation.from && pokemon.id <= generation.to,
+      (pokemon) =>
+        pokemon.species >= generation.from && pokemon.species <= generation.to,
     );
   }
 
   if (view === "games") {
     const ids = await getGamePokemon(activeGame);
-    list = list.filter((pokemon) => ids.has(pokemon.id));
+    list = list.filter(
+      (pokemon) => ids.has(pokemon.species) && isShownInGame(pokemon, activeGame),
+    );
   }
 
   if (activeType !== "all") {
@@ -179,7 +197,7 @@ async function getFilteredList() {
   if (searchTerm) {
     list = list.filter(
       (pokemon) =>
-        pokemon.name.includes(searchTerm) || String(pokemon.id) === searchTerm,
+        pokemon.name.includes(searchTerm) || String(pokemon.species) === searchTerm,
     );
   }
 
@@ -248,14 +266,15 @@ async function loadPage(request = ++listRequest) {
 function createCard(pokemon) {
   const item = createElement("li", "pokemon-item");
   const typeNames = pokemon.types.map((type) => type.type.name);
-  const name = formatName(pokemon.name);
+  const name = formatPokemonName(pokemon.name);
+  const number = formatNumber(getSpeciesId(pokemon));
 
   const card = createElement("a", `pokemon-card type-${typeNames[0]}`);
   card.href = `#${pokemon.id}`;
   card.dataset.id = pokemon.id;
   card.setAttribute(
     "aria-label",
-    `${name}, ${formatNumber(pokemon.id)}, ${typeNames.map(getTypeLabel).join(" y ")}`,
+    `${name}, ${number}, ${typeNames.map(getTypeLabel).join(" y ")}`,
   );
 
   // Types are only icons here, the full tags are in the detail
@@ -268,7 +287,7 @@ function createCard(pokemon) {
 
   const header = createElement("div", "pokemon-header");
   header.append(
-    createElement("span", "pokemon-number", formatNumber(pokemon.id)),
+    createElement("span", "pokemon-number", number),
     typeIcons,
   );
 

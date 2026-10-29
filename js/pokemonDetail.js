@@ -20,6 +20,10 @@ const detailMoves = document.getElementById("detailMoves");
 const detailMovesCount = document.getElementById("detailMovesCount");
 const detailLocations = document.getElementById("detailLocations");
 const detailGenus = document.getElementById("detailGenus");
+const detailForms = document.getElementById("detailForms");
+const detailFusion = document.getElementById("detailFusion");
+const detailExtraGames = document.getElementById("detailExtraGames");
+const extraGamesLabel = document.getElementById("extraGamesLabel");
 const shinyBtn = document.getElementById("shinyBtn");
 const detailBadges = document.getElementById("detailBadges");
 const detailGender = document.getElementById("detailGender");
@@ -57,7 +61,11 @@ async function openDetail(id) {
 	detailBody.classList.add("loading");
 
 	try {
-		const pokemon = await fetchData(`pokemon/${id}`);
+		// The forms are needed to tell which one is being shown
+		const [pokemon] = await Promise.all([
+			fetchData(`pokemon/${id}`),
+			loadForms().catch((error) => console.error("Error fetching forms:", error)),
+		]);
 		if (request !== detailRequest) {
 			return;
 		}
@@ -110,11 +118,12 @@ function markSelectedCard() {
 
 /* ===================== RENDER ===================== */
 function renderPokemon(pokemon) {
-	const name = formatName(pokemon.name);
+	const name = formatPokemonName(pokemon.name);
+	const speciesId = getSpeciesId(pokemon);
 	const types = pokemon.types.map((type) => type.type.name);
 
 	detailHero.className = `detail-hero section type-${types[0]}`;
-	detailId.textContent = formatNumber(pokemon.id);
+	detailId.textContent = formatNumber(speciesId);
 	detailName.textContent = name;
 	detailTypes.replaceChildren(...types.map(createTypeTag));
 	detailDescription.textContent = "";
@@ -129,6 +138,7 @@ function renderPokemon(pokemon) {
 	setDetailImage();
 
 	detailGenus.textContent = "";
+	renderForms(pokemon);
 	detailBadges.replaceChildren();
 	detailGender.replaceChildren();
 	detailEggGroups.textContent = "";
@@ -141,11 +151,13 @@ function renderPokemon(pokemon) {
 	detailMovesCount.textContent = pokemon.moves.length;
 	detailMoves.replaceChildren();
 
-	const generation = getGeneration(pokemon.id);
+	const generation = getGeneration(speciesId);
 	detailGeneration.replaceChildren(
 		createElement("span", "origin-chip accent", `Generación ${generation.roman} · ${generation.region}`)
 	);
 	detailGames.replaceChildren();
+	detailExtraGames.replaceChildren();
+	extraGamesLabel.hidden = true;
 
 	detailWeaknesses.replaceChildren();
 	detailResistances.replaceChildren();
@@ -236,7 +248,7 @@ async function loadMoves(pokemon, request) {
 /* ===================== SPECIES ===================== */
 async function loadSpecies(pokemon, request) {
 	try {
-		const species = await fetchData(`pokemon-species/${pokemon.id}`);
+		const species = await fetchData(`pokemon-species/${getSpeciesId(pokemon)}`);
 		if (request !== detailRequest) {
 			return;
 		}
@@ -463,16 +475,55 @@ function showAbility(chip, ability) {
 	}
 }
 
+/* ===================== FORMS ===================== */
+// The original and its regional forms, each one is a different Pokémon with its own types
+function renderForms(pokemon) {
+	const speciesId = getSpeciesId(pokemon);
+	const forms = formsBySpecies.get(speciesId) || [];
+
+	detailForms.hidden = forms.length === 0;
+
+	// Only the Pokémon it is fused with is known from the data, the rest is how fusions work in the games
+	const fusion = formsById.get(pokemon.id)?.fusion;
+	detailFusion.hidden = !fusion;
+	detailFusion.textContent = fusion ? `Fusión con ${fusion}. Conserva el número de su Pokédex.` : "";
+	detailForms.replaceChildren(
+		...[{ id: speciesId, name: "" }, ...forms].map((form) => {
+			const chip = createElement("a", "form-chip", form.name ? getFormLabel(form.name) : "Original");
+			chip.href = `#${form.id}`;
+
+			if (form.id === pokemon.id) {
+				chip.classList.add("active");
+				chip.setAttribute("aria-current", "true");
+			}
+
+			return chip;
+		})
+	);
+}
+
 /* ===================== GAMES ===================== */
 async function loadGames(pokemon, request) {
 	try {
-		const games = await getPokemonGames(pokemon.id);
+		const speciesId = getSpeciesId(pokemon);
+		const entry = { id: pokemon.id, species: speciesId, form: formsById.has(pokemon.id) };
+		const inPokedex = await getPokemonGames(speciesId);
 		if (request !== detailRequest) {
 			return;
 		}
 
+		const shown = inPokedex.filter((game) => isShownInGame(entry, game.name));
 		detailGames.replaceChildren(
-			...games.map((game) => createElement("span", "origin-chip", game.label))
+			...shown.map((game) => createElement("span", "origin-chip", game.label))
+		);
+
+		// It can exist in a game without being catchable or having an entry, like Zorua de Hisui in Scarlet/Violet
+		const mask = getGamesMask(entry);
+		const extra = mask === undefined ? [] : GAMES.filter((game) => hasGame(mask, game.name) && !shown.includes(game));
+
+		extraGamesLabel.hidden = extra.length === 0;
+		detailExtraGames.replaceChildren(
+			...extra.map((game) => createElement("span", "origin-chip dashed", game.label))
 		);
 	} catch (error) {
 		console.error("Error fetching games:", error);

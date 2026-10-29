@@ -1,5 +1,5 @@
 // Cache version
-const CACHE_NAME = "pokebox-1.0.2";
+const CACHE_NAME = "pokebox-1.0.3";
 const DATA_CACHE = "pokebox-data-1";
 const MAX_IMAGES = 300;
 
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   "./js/api.js",
   "./js/favorites.js",
   "./js/reveal.js",
+  "./js/forms.js",
   "./js/games.js",
   "./js/evolution.js",
   "./js/pokemonDetail.js",
@@ -23,6 +24,7 @@ const STATIC_ASSETS = [
   "./data/locations.json",
   "./data/items.json",
   "./data/versions.json",
+  "./data/forms.json",
 
   // Assets
   "./assets/icon-192.png",
