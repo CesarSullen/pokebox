@@ -67,10 +67,20 @@ function selectType(name) {
   updateList();
 }
 
+// The open height is measured so every type fits, whatever the width is
+function updateTypeListHeight() {
+  typeList.style.maxHeight = typeList.classList.contains("expanded")
+    ? `${typeList.scrollHeight}px`
+    : "";
+}
+
 typeToggle.addEventListener("click", () => {
   const expanded = typeList.classList.toggle("expanded");
   typeToggle.setAttribute("aria-expanded", expanded);
+  updateTypeListHeight();
 });
+
+window.addEventListener("resize", updateTypeListHeight);
 
 /* ===================== GENERATIONS ===================== */
 function buildGenerationFilter() {
@@ -508,3 +518,7 @@ if ("serviceWorker" in navigator) {
       );
   });
 }
+
+/* ===================== APP FEEL ===================== */
+// Pinch zoom is off so it feels like an app, iOS Safari ignores the viewport tag for that
+document.addEventListener("gesturestart", (event) => event.preventDefault());
