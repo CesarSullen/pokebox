@@ -2,7 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <meta name="theme-color" content="#050a18" />
     <meta
       http-equiv="Content-Security-Policy"
@@ -295,10 +298,11 @@
             </button>
             <div class="accordion-content">
               <div>
-                <span id="versionsLabel" class="matchup-label" hidden>Se captura en</span>
-                <div id="detailVersions" class="chip-list origin-list"></div>
-                <span class="matchup-label">Lugares</span>
-                <div id="detailLocations" class="chip-list"></div>
+                <div id="locationsControls" class="select-wrap" hidden>
+                  <select id="locationsGame" class="select" aria-label="Juego"></select>
+                  <span class="icon icon-chevron-down" aria-hidden="true"></span>
+                </div>
+                <div id="detailLocations" class="places"></div>
               </div>
             </div>
           </div>
@@ -313,7 +317,13 @@
               <span class="icon icon-chevron-down" aria-hidden="true"></span>
             </button>
             <div class="accordion-content">
-              <div id="detailMoves" class="chip-list"></div>
+              <div>
+                <div id="movesControls" class="select-wrap" hidden>
+                  <select id="movesGame" class="select" aria-label="Juego"></select>
+                  <span class="icon icon-chevron-down" aria-hidden="true"></span>
+                </div>
+                <div id="detailMoves" class="moves"></div>
+              </div>
             </div>
           </div>
         </div>

@@ -33,8 +33,10 @@ const detailEvolution = document.getElementById("detailEvolution");
 const abilityInfo = document.getElementById("abilityInfo");
 const detailGeneration = document.getElementById("detailGeneration");
 const detailGames = document.getElementById("detailGames");
-const detailVersions = document.getElementById("detailVersions");
-const versionsLabel = document.getElementById("versionsLabel");
+const movesControls = document.getElementById("movesControls");
+const movesGame = document.getElementById("movesGame");
+const locationsControls = document.getElementById("locationsControls");
+const locationsGame = document.getElementById("locationsGame");
 const favoriteBtn = document.getElementById("favoriteBtn");
 
 const desktopQuery = window.matchMedia("(min-width: 1000px)");
@@ -42,6 +44,8 @@ const desktopQuery = window.matchMedia("(min-width: 1000px)");
 let currentPokemonId = null;
 let currentPokemon = null;
 let showShiny = false;
+let movesByGame = new Map();
+let placesByVersion = new Map();
 let detailRequest = 0;
 let locationsLoadedFor = null;
 
@@ -148,8 +152,9 @@ function renderPokemon(pokemon) {
 
 	updateFavoriteButton();
 	renderStats(pokemon.stats);
-	detailMovesCount.textContent = pokemon.moves.length;
+	detailMovesCount.textContent = 0;
 	detailMoves.replaceChildren();
+	movesControls.hidden = true;
 
 	const generation = getGeneration(speciesId);
 	detailGeneration.replaceChildren(
@@ -163,8 +168,8 @@ function renderPokemon(pokemon) {
 	detailResistances.replaceChildren();
 	detailAbilities.replaceChildren();
 	detailLocations.replaceChildren();
-	detailVersions.replaceChildren();
-	versionsLabel.hidden = true;
+	locationsControls.hidden = true;
+	placesByVersion = new Map();
 	locationsLoadedFor = null;
 
 	// Restart the entrance animation
@@ -195,7 +200,27 @@ function renderStats(stats) {
 		return row;
 	});
 
-	detailStats.replaceChildren(...rows);
+	// Sum of the six, with a bar scaled to the highest total of the games
+	const total = STAT_LABELS.reduce((sum, statLabel) => {
+		const stat = stats.find((item) => item.stat.name === statLabel.key);
+		return sum + (stat ? stat.base_stat : 0);
+	}, 0);
+
+	const totalRow = createElement("div", "stat stat-total");
+	totalRow.style.setProperty("--value", Math.min((total / 720) * 100, 100));
+	totalRow.style.setProperty("--index", rows.length);
+
+	const totalMeter = createElement("div", "custom-meter");
+	totalMeter.appendChild(createElement("div", "meter-value"));
+
+	totalRow.append(
+		createElement("span", "icon stat-icon"),
+		createElement("span", "stat-name", "Total"),
+		totalMeter,
+		createElement("span", "stat-value", total)
+	);
+
+	detailStats.replaceChildren(...rows, totalRow);
 
 	// Two frames so the browser paints the empty bars before they fill up
 	requestAnimationFrame(() => {
@@ -228,6 +253,34 @@ function sortNames(names) {
 	return names.sort((a, b) => a.localeCompare(b, "es"));
 }
 
+// Moves of each game, split by the way they are learned
+function groupMoves(pokemon, names) {
+	const games = new Map();
+
+	pokemon.moves.forEach((item) => {
+		const name = names.moves[item.move.name] || formatName(item.move.name);
+
+		item.version_group_details.forEach((detail) => {
+			const game = detail.version_group.name;
+
+			if (!GAMES.some((entry) => entry.name === game)) {
+				return;
+			}
+
+			const known = MOVE_METHODS.some((method) => method.key === detail.move_learn_method.name);
+			const method = known ? detail.move_learn_method.name : "other";
+
+			if (!games.has(game)) {
+				games.set(game, Object.fromEntries(MOVE_METHODS.map((entry) => [entry.key, []])));
+			}
+
+			games.get(game)[method].push({ name, level: detail.level_learned_at });
+		});
+	});
+
+	return games;
+}
+
 async function loadMoves(pokemon, request) {
 	try {
 		const names = await loadNames();
@@ -235,15 +288,72 @@ async function loadMoves(pokemon, request) {
 			return;
 		}
 
-		const moves = pokemon.moves.map((item) => names.moves[item.move.name] || formatName(item.move.name));
+		movesByGame = groupMoves(pokemon, names);
+		const games = GAMES.filter((game) => movesByGame.has(game.name));
 
-		detailMoves.replaceChildren(
-			...sortNames(moves).map((move) => createElement("span", "chip", move))
+		movesControls.hidden = games.length === 0;
+		movesGame.replaceChildren(
+			...games.map((game) => {
+				const option = createElement("option", "", game.label);
+				option.value = game.name;
+				return option;
+			})
 		);
+
+		// The latest game is the one that shows first
+		movesGame.value = games.length ? games[games.length - 1].name : "";
+		renderMoves();
 	} catch (error) {
 		console.error("Error fetching move names:", error);
 	}
 }
+
+function renderMoves() {
+	const data = movesByGame.get(movesGame.value);
+	const sections = [];
+	let total = 0;
+
+	MOVE_METHODS.forEach((method) => {
+		const moves = data ? [...data[method.key]] : [];
+
+		if (!moves.length) {
+			return;
+		}
+
+		total += moves.length;
+		moves.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, "es"));
+
+		const section = createElement("div", "move-section");
+		section.appendChild(createElement("h4", "move-title", `${method.label} (${moves.length})`));
+
+		if (method.key === "level-up") {
+			const list = createElement("div", "move-levels");
+
+			moves.forEach((move) => {
+				const row = createElement("div", "move-row");
+				row.append(
+					createElement("span", "move-level", move.level ? `Nv. ${move.level}` : "Evo."),
+					createElement("span", "move-name", move.name)
+				);
+				list.appendChild(row);
+			});
+			section.appendChild(list);
+		} else {
+			const list = createElement("div", "chip-list");
+			list.append(...moves.map((move) => createElement("span", "chip", move.name)));
+			section.appendChild(list);
+		}
+
+		sections.push(section);
+	});
+
+	detailMovesCount.textContent = total;
+	detailMoves.replaceChildren(
+		...(sections.length ? sections : [createElement("span", "muted", "Sin datos de movimientos")])
+	);
+}
+
+movesGame.addEventListener("change", renderMoves);
 
 /* ===================== SPECIES ===================== */
 async function loadSpecies(pokemon, request) {
@@ -302,6 +412,17 @@ function renderSpeciesFacts(species) {
 }
 
 // gender_rate is the chance of being female in eighths, -1 means genderless
+function createGenderValue(gender, value) {
+	const item = createElement("span", `gender-value ${gender}`);
+
+	item.append(
+		createElement("span", `icon icon-${gender === "male" ? "mars" : "venus"}`),
+		createElement("span", "", `${value}%`)
+	);
+
+	return item;
+}
+
 function renderGender(rate) {
 	if (rate === -1) {
 		detailGender.replaceChildren(createElement("span", "muted", "Sin género"));
@@ -318,10 +439,10 @@ function renderGender(rate) {
 	femaleBar.style.width = `${female}%`;
 	bar.append(maleBar, femaleBar);
 
-	detailGender.replaceChildren(
-		bar,
-		createElement("span", "gender-text", `♂ ${male}%   ♀ ${female}%`)
-	);
+	const values = createElement("div", "gender-text");
+	values.append(createGenderValue("male", male), createGenderValue("female", female));
+
+	detailGender.replaceChildren(bar, values);
 }
 
 /* ===================== EVOLUTION ===================== */
@@ -550,43 +671,89 @@ async function loadLocations() {
 			return;
 		}
 
-		if (!encounters.length) {
+		// Places of each game, with how it shows up there. Several areas of the same place are one place
+		placesByVersion = new Map();
+
+		encounters.forEach((encounter) => {
+			const place =
+				names.locations[getIdFromUrl(encounter.location_area.url)] ||
+				formatName(encounter.location_area.name);
+
+			encounter.version_details.forEach((detail) => {
+				if (!(detail.version.name in names.versions)) {
+					return;
+				}
+
+				if (!placesByVersion.has(detail.version.name)) {
+					placesByVersion.set(detail.version.name, new Map());
+				}
+
+				const places = placesByVersion.get(detail.version.name);
+				if (!places.has(place)) {
+					places.set(place, { methods: new Set(), min: Infinity, max: 0 });
+				}
+
+				const info = places.get(place);
+				detail.encounter_details.forEach((item) => {
+					info.methods.add(item.method.name);
+					info.min = Math.min(info.min, item.min_level);
+					info.max = Math.max(info.max, item.max_level);
+				});
+			});
+		});
+
+		// Versions in release order, the latest one shows first
+		const versions = Object.keys(names.versions).filter((slug) => placesByVersion.has(slug));
+
+		locationsControls.hidden = versions.length === 0;
+		locationsGame.replaceChildren(
+			...versions.map((slug) => {
+				const option = createElement("option", "", names.versions[slug]);
+				option.value = slug;
+				return option;
+			})
+		);
+
+		if (!versions.length) {
 			detailLocations.replaceChildren(
 				createElement("span", "warning-text", "No se encuentra en la naturaleza")
 			);
 			return;
 		}
 
-		// Versions where it can be caught, in release order. Some Pokémon are only in one of the two versions of a game
-		const versions = new Set(
-			encounters.flatMap((encounter) =>
-				encounter.version_details.map((detail) => detail.version.name)
-			)
-		);
-		const caught = Object.keys(names.versions).filter((slug) => versions.has(slug));
-
-		detailVersions.replaceChildren(
-			...caught.map((slug) => createElement("span", "chip", names.versions[slug]))
-		);
-		versionsLabel.hidden = caught.length === 0;
-
-		// Several areas belong to the same place, so they are grouped by place
-		const places = new Set(
-			encounters.map(
-				(encounter) =>
-					names.locations[getIdFromUrl(encounter.location_area.url)] ||
-					formatName(encounter.location_area.name)
-			)
-		);
-
-		detailLocations.replaceChildren(
-			...sortNames([...places]).map((place) => createElement("span", "chip", place))
-		);
+		locationsGame.value = versions[versions.length - 1];
+		renderPlaces();
 	} catch (error) {
 		locationsLoadedFor = null;
 		console.error("Error fetching locations:", error);
 	}
 }
+
+function renderPlaces() {
+	const places = placesByVersion.get(locationsGame.value) || new Map();
+
+	detailLocations.replaceChildren(
+		...sortNames([...places.keys()]).map((place) => {
+			const info = places.get(place);
+			const methods = [...info.methods].map((method) => ENCOUNTER_METHODS[method] || formatName(method));
+			const levels = Number.isFinite(info.min)
+				? info.min === info.max
+					? `Nv. ${info.min}`
+					: `Nv. ${info.min}–${info.max}`
+				: "";
+
+			const row = createElement("div", "place");
+			row.append(
+				createElement("span", "place-name", place),
+				createElement("span", "place-meta", [...new Set(methods), levels].filter(Boolean).join(" · "))
+			);
+
+			return row;
+		})
+	);
+}
+
+locationsGame.addEventListener("change", renderPlaces);
 
 /* ===================== SHINY ===================== */
 function setDetailImage() {
@@ -649,4 +816,33 @@ document.querySelectorAll(".accordion-header").forEach((header) => {
 			loadLocations();
 		}
 	});
+});
+
+/* ===================== NAVIGATION INSIDE THE DETAIL ===================== */
+// On mobile, going from one Pokémon to another inside the sheet replaces the history entry instead of adding one,
+// so a single close (or back) leaves the sheet no matter how many Pokémon were opened from it
+detail.addEventListener("click", (event) => {
+	const link = event.target.closest('a[href^="#"]');
+
+	if (
+		!link ||
+		desktopQuery.matches ||
+		event.button !== 0 ||
+		event.ctrlKey ||
+		event.metaKey ||
+		event.shiftKey
+	) {
+		return;
+	}
+
+	const id = Number.parseInt(link.getAttribute("href").slice(1), 10);
+
+	if (!Number.isInteger(id) || id <= 0) {
+		return;
+	}
+
+	event.preventDefault();
+	history.replaceState(null, "", `#${id}`);
+	openDetail(id);
+	detail.scrollTo({ top: 0, behavior: "smooth" });
 });
