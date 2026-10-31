@@ -30,6 +30,9 @@ const detailGender = document.getElementById("detailGender");
 const detailEggGroups = document.getElementById("detailEggGroups");
 const detailCapture = document.getElementById("detailCapture");
 const detailEvolution = document.getElementById("detailEvolution");
+const evolutionRules = document.getElementById("evolutionRules");
+const arceusToggle = document.getElementById("arceusToggle");
+const arceusNote = document.getElementById("arceusNote");
 const abilityInfo = document.getElementById("abilityInfo");
 const detailGeneration = document.getElementById("detailGeneration");
 const detailGames = document.getElementById("detailGames");
@@ -44,6 +47,8 @@ const desktopQuery = window.matchMedia("(min-width: 1000px)");
 let currentPokemonId = null;
 let currentPokemon = null;
 let showShiny = false;
+let evolutionContext = null;
+let arceusRules = false;
 let movesByGame = new Map();
 let placesByVersion = new Map();
 let detailRequest = 0;
@@ -148,6 +153,8 @@ function renderPokemon(pokemon) {
 	detailEggGroups.textContent = "";
 	detailCapture.textContent = "";
 	detailEvolution.replaceChildren();
+	evolutionContext = null;
+	evolutionRules.hidden = true;
 	abilityInfo.hidden = true;
 
 	updateFavoriteButton();
@@ -456,11 +463,36 @@ async function loadEvolution(species, currentId, request) {
 			return;
 		}
 
-		detailEvolution.replaceChildren(renderEvolution(chain.chain, currentId, names));
+		evolutionContext = { chain: chain.chain, currentId, names };
+
+		// Coming from Legends: Arceus in the games view it starts with that game's rules
+		arceusRules = view === "games" && activeGame === "legends-arceus";
+		renderEvolutionSection();
 	} catch (error) {
 		console.error("Error fetching evolution chain:", error);
 	}
 }
+
+// Only evolutions by trade change in Legends: Arceus, so the choice only shows up when there is one
+function renderEvolutionSection() {
+	if (!evolutionContext) {
+		return;
+	}
+
+	const { chain, currentId, names } = evolutionContext;
+	const { element, hasTrade } = renderEvolution(chain, currentId, names, { arceus: arceusRules });
+
+	detailEvolution.replaceChildren(element);
+	evolutionRules.hidden = !hasTrade;
+	arceusToggle.classList.toggle("active", arceusRules);
+	arceusToggle.setAttribute("aria-pressed", arceusRules);
+	arceusNote.hidden = !arceusRules;
+}
+
+arceusToggle.addEventListener("click", () => {
+	arceusRules = !arceusRules;
+	renderEvolutionSection();
+});
 
 /* ===================== WEAKNESSES AND RESISTANCES ===================== */
 async function loadMatchups(pokemon, request) {

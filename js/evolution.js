@@ -19,14 +19,54 @@ const EVOLUTION_TRIGGERS = {
 
 const TIMES_OF_DAY = { day: "de día", night: "de noche", dusk: "al atardecer" };
 
-function describeEvolution(detail, names) {
+// Places where a level up evolves, the place changes with the game but it is the same kind of place
+const MAGNETIC_PLACES = [
+	"mt-coronet",
+	"chargestone-cave",
+	"new-mauville",
+	"kalos-route-13",
+	"blush-mountain",
+	"vast-poni-canyon",
+];
+const MOSS_ROCK_PLACES = ["eterna-forest", "pinwheel-forest", "kalos-route-20", "petalburg-woods", "lush-jungle"];
+const ICE_ROCK_PLACES = ["sinnoh-route-217", "twist-mountain", "frost-cavern", "shoal-cave", "mount-lanakila"];
+const PLACE_NAMES = { "mount-lanakila": "el Monte Lanakila" };
+
+const LINKING_CORD = "Cable Enlace";
+
+function describeLocation(detail) {
+	const slug = detail.location?.name;
+
+	if (detail.near_special_rock) {
+		if (MOSS_ROCK_PLACES.includes(slug)) {
+			return "cerca de una Roca Musgo";
+		}
+		if (ICE_ROCK_PLACES.includes(slug)) {
+			return "cerca de una Roca Helada";
+		}
+		return "cerca de una roca especial";
+	}
+
+	if (MAGNETIC_PLACES.includes(slug)) {
+		return "en una zona magnética";
+	}
+
+	return `en ${PLACE_NAMES[slug] || formatName(slug)}`;
+}
+
+function describeEvolution(detail, names, rules = {}) {
 	const parts = [];
 	const item = (slug) => names.items[slug] || formatName(slug);
 	const move = (slug) => names.moves[slug] || formatName(slug);
 
+	// In Legends: Arceus nothing needs a trade: the Linking Cord is used, or the item the trade asked for
+	if (rules.arceus && detail.trigger.name === "trade" && !detail.trade_species) {
+		return `Usar ${detail.held_item ? item(detail.held_item.name) : LINKING_CORD}`;
+	}
+
 	if (detail.trigger.name === "use-item" && detail.item) {
 		parts.push(item(detail.item.name));
-	} else if (EVOLUTION_TRIGGERS[detail.trigger.name]) {
+	} else if (EVOLUTION_TRIGGERS[detail.trigger.name] && !(detail.trigger.name === "take-damage" && detail.min_damage_taken)) {
 		parts.push(EVOLUTION_TRIGGERS[detail.trigger.name]);
 	}
 
@@ -57,9 +97,15 @@ function describeEvolution(detail, names) {
 	if (detail.time_of_day) {
 		parts.push(TIMES_OF_DAY[detail.time_of_day] || detail.time_of_day);
 	}
-	// The rock already tells where it happens
-	if (detail.location && !detail.near_special_rock) {
-		parts.push(`en ${formatName(detail.location.name)}`);
+	if (detail.min_damage_taken) {
+		parts.push(`Recibir ${detail.min_damage_taken} de daño`);
+	}
+
+	if (detail.location || detail.near_special_rock) {
+		const place = describeLocation(detail);
+		const levelUp = detail.trigger.name === "level-up" && !detail.min_level;
+
+		parts.push(levelUp ? `Subir de nivel ${place}` : place);
 	}
 	if (detail.region) {
 		parts.push(`en ${REGIONAL_FORMS[detail.region.name] || formatName(detail.region.name)}`);
@@ -86,16 +132,9 @@ function describeEvolution(detail, names) {
 		const symbol = { 1: ">", 0: "=", [-1]: "<" }[detail.relative_physical_stats];
 		parts.push(`Ataque ${symbol} Defensa`);
 	}
-	if (detail.min_damage_taken) {
-		parts.push(`tras recibir ${detail.min_damage_taken} de daño`);
-	}
 	if (detail.min_steps) {
 		parts.push(`${detail.min_steps} pasos`);
 	}
-	if (detail.near_special_rock) {
-		parts.push("cerca de una roca especial");
-	}
-
 	// Level up without anything else
 	if (!parts.length) {
 		parts.push("Subir de nivel");
@@ -211,17 +250,17 @@ function createEvolutionNode(node, currentId) {
 }
 
 // Each branch is the way into a Pokémon (condition) plus the Pokémon and what it evolves into
-function createEvolutionBranch(node, graph, currentId, names, edge = null) {
+function createEvolutionBranch(node, graph, currentId, names, rules, edge = null) {
 	const branch = createElement("div", "evo-branch");
 
 	if (edge) {
-		// Some Pokémon evolve in several ways, the first one is shown and all of them go in the tooltip
-		const texts = [...new Set(edge.details.map((detail) => describeEvolution(detail, names)))];
+		// Some Pokémon evolve in several ways, two are shown and all of them go in the tooltip
+		const texts = [...new Set(edge.details.map((detail) => describeEvolution(detail, names, rules)))];
 		const condition = createElement("div", "evo-condition");
 		condition.title = texts.join(" / ");
 
 		condition.append(
-			createElement("span", "evo-condition-text", texts[0]),
+			createElement("span", "evo-condition-text", texts.slice(0, 2).join(" / ")),
 			createElement("span", "icon icon-arrow-right")
 		);
 		branch.appendChild(condition);
@@ -235,7 +274,7 @@ function createEvolutionBranch(node, graph, currentId, names, edge = null) {
 		const next = createElement("div", "evo-next");
 
 		children.forEach((child) => {
-			next.appendChild(createEvolutionBranch(child.to, graph, currentId, names, child));
+			next.appendChild(createEvolutionBranch(child.to, graph, currentId, names, rules, child));
 		});
 		branch.appendChild(next);
 	}
@@ -243,7 +282,8 @@ function createEvolutionBranch(node, graph, currentId, names, edge = null) {
 	return branch;
 }
 
-function renderEvolution(chain, currentId, names) {
+// Returns the diagram and whether any evolution in it is by trade, which is the only thing that changes in Legends: Arceus
+function renderEvolution(chain, currentId, names, rules = {}) {
 	const graph = buildEvolutionGraph(chain);
 	let current = graph.nodes.find((node) => node.id === currentId);
 
@@ -256,13 +296,18 @@ function renderEvolution(chain, currentId, names) {
 	const lineage = current ? getLineage(graph, current) : graph;
 
 	if (!lineage.edges.length) {
-		return createElement("span", "muted", "No evoluciona");
+		return { element: createElement("span", "muted", "No evoluciona"), hasTrade: false };
 	}
 
+	const hasTrade = lineage.edges.some((edge) =>
+		edge.details.some((detail) => detail.trigger.name === "trade" && !detail.trade_species)
+	);
 	const roots = lineage.nodes.filter((node) => !lineage.edges.some((edge) => edge.to === node));
 	const wrapper = createElement("div", "evo-roots");
 
-	roots.forEach((root) => wrapper.appendChild(createEvolutionBranch(root, lineage, currentId, names)));
+	roots.forEach((root) =>
+		wrapper.appendChild(createEvolutionBranch(root, lineage, currentId, names, rules))
+	);
 
-	return wrapper;
+	return { element: wrapper, hasTrade };
 }
