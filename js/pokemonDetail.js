@@ -73,7 +73,9 @@ async function openDetail(id) {
 		// The forms are needed to tell which one is being shown
 		const [pokemon] = await Promise.all([
 			fetchData(`pokemon/${id}`),
-			loadForms().catch((error) => console.error("Error fetching forms:", error)),
+			Promise.all([loadForms(), loadExtraGames()]).catch((error) =>
+				console.error("Error fetching forms and games:", error)
+			),
 		]);
 		if (request !== detailRequest) {
 			return;
@@ -670,9 +672,13 @@ async function loadGames(pokemon, request) {
 			...shown.map((game) => createElement("span", "origin-chip", game.label))
 		);
 
-		// It can exist in a game without being catchable or having an entry, like Zorua de Hisui in Scarlet/Violet
+		// It can be in a game without an entry in its Pokédex, like Rayquaza in Ultra Sun or Zorua de Hisui in Scarlet/Violet
 		const mask = getGamesMask(entry);
-		const extra = mask === undefined ? [] : GAMES.filter((game) => hasGame(mask, game.name) && !shown.includes(game));
+		const extra = GAMES.filter(
+			(game) =>
+				!shown.includes(game) &&
+				((mask !== undefined && hasGame(mask, game.name)) || getExtraGames(game.name).has(speciesId))
+		);
 
 		extraGamesLabel.hidden = extra.length === 0;
 		detailExtraGames.replaceChildren(

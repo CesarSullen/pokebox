@@ -634,6 +634,15 @@ a {
   height: 1.75rem;
 }
 
+.pokemon-card.no-entry {
+  border-style: dashed;
+}
+
+.pokemon-note {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
 .pokemon-number {
   color: var(--muted);
   font-size: 0.75rem;
@@ -705,23 +714,24 @@ a {
   background-color: var(--type-color, var(--muted));
 }
 
+/* Pills and buttons with text use whole pixel heights and line heights (type 23, form 23, chip 26/24, origin 29,
+   ability 30/26, page button 42/38, accordion 52) found by measuring where the text lands in each font rendering
+   mode: half a pixel of difference moves it, and these leave it in the middle on every screen.
+   Do not size them with padding, and when a pill has a border its line height is the height minus the border */
 .type-tag {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.55rem 0.2rem 0.25rem;
+  height: 1.4375rem;
+  padding: 0 0.6rem 0 0.3rem;
   border-radius: 8px;
   background: var(--type-color);
   color: var(--type-text, var(--text));
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 700;
+  line-height: 1.4375rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-/* Uppercase text sits a bit high in the line box, so it gets a small push down */
-.type-tag > span {
-  padding-top: 0.15rem;
 }
 
 .type-tag img {
@@ -762,7 +772,9 @@ a {
 }
 
 .page-btn {
-  padding: 0.7rem 1.4rem;
+  height: 2.625rem;
+  padding: 0 1.4rem;
+  line-height: 2.375rem;
   border-radius: 12px;
   background: rgba(16, 26, 51, 0.9);
   border: 1px solid var(--line);
@@ -1233,7 +1245,9 @@ a {
 }
 
 .ability-chip {
-  padding: 0.35rem 0.8rem;
+  height: 1.875rem;
+  padding: 0 0.8rem;
+  line-height: 1.625rem;
   transition:
     background-color 0.2s,
     border-color 0.2s;
@@ -1260,8 +1274,11 @@ a {
 }
 
 .chip {
-  padding: 0.25rem 0.65rem;
+  height: 1.625rem;
+  padding: 0 0.65rem;
   border-radius: 8px;
+  line-height: 1.5rem;
+  white-space: nowrap;
   border-color: transparent;
   font-size: 0.75rem;
 }
@@ -1427,7 +1444,9 @@ a {
 }
 
 .form-chip {
-  padding: 0.2rem 0.65rem;
+  height: 1.4375rem;
+  padding: 0 0.65rem;
+  line-height: 1.4375rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1468,7 +1487,11 @@ a {
 }
 
 .origin-chip {
-  padding: 0.3rem 0.75rem;
+  max-width: 100%;
+  height: 1.8125rem;
+  padding: 0 0.75rem;
+  line-height: 1.8125rem;
+  white-space: nowrap;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1495,7 +1518,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  height: 3.25rem;
+  padding: 0 1.25rem;
   font-size: 0.95rem;
   font-weight: 600;
   text-align: left;

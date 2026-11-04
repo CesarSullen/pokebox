@@ -26,6 +26,7 @@ let searchTerm = "";
 let allPokemon = [];
 let filteredPokemon = [];
 let listRequest = 0;
+let noEntry = new Set();
 let firstLoad = true;
 
 /* ===================== POKÉMON TYPES ===================== */
@@ -153,7 +154,9 @@ async function loadAllPokemon() {
   const data = await fetchData(`pokemon?limit=${TOTAL_POKEMONS}`);
 
   // Without the forms the list still works, it only misses the regional ones
-  await loadForms().catch((error) => console.error("Error fetching forms:", error));
+  await Promise.all([loadForms(), loadExtraGames()]).catch((error) =>
+    console.error("Error fetching forms and games:", error),
+  );
 
   const base = data.results.map((pokemon) => {
     const id = getIdFromUrl(pokemon.url);
@@ -175,6 +178,7 @@ async function loadAllPokemon() {
 
 async function getFilteredList() {
   let list = allPokemon;
+  noEntry = new Set();
 
   if (view === "favorites") {
     const favorites = new Set(getFavorites());
@@ -191,8 +195,14 @@ async function getFilteredList() {
 
   if (view === "games") {
     const ids = await getGamePokemon(activeGame);
+    const extra = getExtraGames(activeGame);
+
+    // What is in the game but has no entry in its Pokédex is also listed, and marked
+    noEntry = new Set([...extra].filter((id) => !ids.has(id)));
     list = list.filter(
-      (pokemon) => ids.has(pokemon.species) && isShownInGame(pokemon, activeGame),
+      (pokemon) =>
+        (ids.has(pokemon.species) || extra.has(pokemon.species)) &&
+        isShownInGame(pokemon, activeGame),
     );
   }
 
@@ -320,6 +330,13 @@ function createCard(pokemon) {
     imgContainer,
     createElement("h3", "pokemon-name", name),
   );
+
+  // In the game but with no entry in its Pokédex (Rayquaza in Ultra Sun)
+  if (noEntry.has(getSpeciesId(pokemon))) {
+    card.classList.add("no-entry");
+    card.appendChild(createElement("span", "pokemon-note", "Sin entrada en la Pokédex"));
+  }
+
   item.appendChild(card);
 
   return item;

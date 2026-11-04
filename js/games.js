@@ -33,3 +33,27 @@ async function getPokemonGames(id) {
 
 	return GAMES.filter((game, index) => games[index].has(id));
 }
+
+// Pokémon that can be obtained in a game without having an entry in its Pokédex (legendaries, gifts, what evolves from them)
+const extraGames = new Map();
+
+let extraRequest = null;
+
+function loadExtraGames() {
+	if (!extraRequest) {
+		extraRequest = fetch("./data/extra-games.json")
+			.then((response) => response.json())
+			.then((data) => {
+				Object.entries(data).forEach(([game, ids]) => extraGames.set(game, new Set(ids)));
+			});
+
+		// A failed request must not stay cached
+		extraRequest.catch(() => (extraRequest = null));
+	}
+
+	return extraRequest;
+}
+
+function getExtraGames(gameName) {
+	return extraGames.get(gameName) || new Set();
+}
