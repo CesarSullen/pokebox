@@ -28,6 +28,7 @@ let filteredPokemon = [];
 let listRequest = 0;
 let noEntry = new Set();
 let firstLoad = true;
+let needsRetry = false;
 
 /* ===================== POKÉMON TYPES ===================== */
 function createTypeChip(name, label) {
@@ -247,6 +248,7 @@ async function updateList(resetPage = true) {
     await loadPage(request);
   } catch (error) {
     console.error(error);
+    needsRetry = true;
     showMessage(
       "No se pudo cargar la lista. Revisa tu conexión e inténtalo de nuevo.",
     );
@@ -500,6 +502,23 @@ document.addEventListener("keydown", (event) => {
 });
 
 /* ===================== INIT ===================== */
+async function loadInitialList() {
+  needsRetry = false;
+  showSkeletons();
+
+  try {
+    await loadAllPokemon();
+    await updateList();
+  } catch (error) {
+    console.error(error);
+    needsRetry = true;
+    pokemonList.replaceChildren();
+    showMessage(
+      "No se pudo cargar la lista. Revisa tu conexión e inténtalo de nuevo.",
+    );
+  }
+}
+
 async function init() {
   buildGenerationFilter();
   buildGameFilter();
@@ -509,17 +528,39 @@ async function init() {
     handleHash();
   }
 
-  showSkeletons();
+  await loadInitialList();
+  handleLaunchParams();
+}
 
-  try {
-    await loadAllPokemon();
-    await updateList();
-  } catch (error) {
-    console.error(error);
-    pokemonList.replaceChildren();
-    showMessage(
-      "No se pudo cargar la lista. Revisa tu conexión e inténtalo de nuevo.",
-    );
+// Try again by itself when the connection comes back or the app returns to the screen
+function retryIfNeeded() {
+  if (!needsRetry || !navigator.onLine) return;
+
+  if (allPokemon.length) {
+    needsRetry = false;
+    updateList(false);
+  } else {
+    loadInitialList();
+  }
+}
+
+window.addEventListener("online", retryIfNeeded);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") retryIfNeeded();
+});
+
+// Handle app shortcuts (?view=favorites, ?view=generations, ?view=games)
+function handleLaunchParams() {
+  const params = new URLSearchParams(location.search);
+  if (![...params.keys()].length) return;
+
+  const target = params.get("view");
+
+  // Clean the address so a reload does not repeat the action
+  history.replaceState(null, "", location.pathname + location.hash);
+
+  if (target && target !== view) {
+    document.querySelector(`.nav-btn[data-view="${target}"]`)?.click();
   }
 }
 

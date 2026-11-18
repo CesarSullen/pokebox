@@ -1,5 +1,5 @@
 // Cache version
-const CACHE_NAME = "pokebox-1.0.6";
+const CACHE_NAME = "pokebox-1.0.7";
 const DATA_CACHE = "pokebox-data-1";
 const MAX_IMAGES = 300;
 
@@ -30,6 +30,7 @@ const STATIC_ASSETS = [
   // Assets
   "./assets/icon-192.png",
   "./assets/icon-512.png",
+  "./assets/icon-512-maskable.png",
   "./assets/apple-touch-icon.png",
   "./assets/icons/arrow-right.svg",
   "./assets/icons/bug.svg",
@@ -76,11 +77,25 @@ const STATIC_ASSETS = [
   "./typography/inter-variable.woff2",
 ];
 
+// Max time to wait for the network before using the cache
+const NETWORK_TIMEOUT = 5000;
+
+// Files needed to render the app: if these fail, the install fails
+const CORE_ASSETS = STATIC_ASSETS.slice(0, 13);
+
 // Install
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.addAll(CORE_ASSETS);
+
+      // The rest is best effort, one missing file must not block the update
+      await Promise.allSettled(
+        STATIC_ASSETS.slice(CORE_ASSETS.length).map((url) => cache.add(url)),
+      );
+    })(),
   );
 });
 
@@ -99,6 +114,55 @@ self.addEventListener("activate", (event) => {
     })(),
   );
 });
+
+// After one request times out, the cache answers right away for a while,
+// so a slow connection costs one wait, not one per file
+const SLOW_WINDOW = 30000;
+let slowUntil = 0;
+
+// Network-first, but a slow connection falls back to the cache instead of leaving the app blank
+async function networkFirst(request) {
+  const started = Date.now();
+  const fromCache = () => caches.match(request, { ignoreSearch: true });
+
+  const network = fetch(request).then(async (response) => {
+    if (Date.now() - started < NETWORK_TIMEOUT) slowUntil = 0;
+
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  });
+  network.catch(() => {});
+
+  if (Date.now() < slowUntil) {
+    const hit = await fromCache();
+    if (hit) return hit;
+  }
+
+  const slowFallback = new Promise((resolve) =>
+    setTimeout(async () => {
+      const hit = await fromCache();
+      if (hit) slowUntil = Date.now() + SLOW_WINDOW;
+      resolve(hit || null);
+    }, NETWORK_TIMEOUT),
+  );
+
+  try {
+    const first = await Promise.race([network, slowFallback]);
+    if (first) return first;
+
+    // Nothing cached yet: keep waiting for the network
+    return await network;
+  } catch (error) {
+    return (
+      (await fromCache()) ||
+      (request.mode === "navigate" ? await caches.match("./index.html") : null) ||
+      Response.error()
+    );
+  }
+}
 
 // Keep only the newest images so the cache does not grow forever
 async function trimImages(cache) {
@@ -131,7 +195,7 @@ self.addEventListener("fetch", (event) => {
             if (response.ok) cache.put(request, response.clone());
             return response;
           })
-          .catch(() => cached);
+          .catch(() => cached || Response.error());
 
         return cached || network;
       }),
@@ -162,21 +226,6 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== self.location.origin) return;
 
-  // Own files: network-first, so updates show up right away, and cache when offline
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (!response.ok) return response;
-
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, response.clone());
-          return response;
-        });
-      })
-      .catch(() =>
-        caches
-          .match(request)
-          .then((cached) => cached || caches.match("./index.html")),
-      ),
-  );
+  // Own files: network-first, so updates show up right away, and cache when offline or slow
+  event.respondWith(networkFirst(request));
 });
