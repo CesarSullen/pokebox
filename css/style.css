@@ -1248,6 +1248,7 @@ a {
   height: 1.875rem;
   padding: 0 0.8rem;
   line-height: 1.625rem;
+  white-space: nowrap;
   transition:
     background-color 0.2s,
     border-color 0.2s;
