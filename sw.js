@@ -1,5 +1,5 @@
 // Cache version
-const CACHE_NAME = "pokebox-1.0.7";
+const CACHE_NAME = "pokebox-1.0.8";
 const DATA_CACHE = "pokebox-data-1";
 const MAX_IMAGES = 300;
 
